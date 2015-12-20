@@ -113,7 +113,7 @@ structure Lexer = struct
           (FileBuf.bump fb;
            case FileBuf.getch fb of
              SOME(#"-") => (lex_line_comment fb; lex fb)
-           | _ => Token.reserved (lex_while issymbol fb))
+           | _ => Token.reserved ("-" ^ (lex_while issymbol fb)))
 
         else if isalpha c then
           Token.reserved (lex_while isalphanumeric fb)
