@@ -56,6 +56,16 @@ structure Token = struct
   | Dot
   | Semicolon
   | Dotdotdot
+  | Eqtype
+  | Functor
+  | Include
+  | Sharing
+  | Sig
+  | Signature
+  | Struct
+  | Structure
+  | Where
+  | Grin
 
   fun reserved "abstype"   = Abstype
     | reserved "and"       = And
@@ -96,6 +106,16 @@ structure Token = struct
     | reserved "=>"        = FatArrow
     | reserved "->"        = Arrow
     | reserved "#"         = Pound
+    | reserved "eqtype"    = Eqtype
+    | reserved "functor"   = Functor
+    | reserved "include"   = Include
+    | reserved "sharing"   = Sharing
+    | reserved "sig"       = Sig
+    | reserved "signature" = Signature
+    | reserved "struct"    = Struct
+    | reserved "structure" = Structure
+    | reserved "where"     = Where
+    | reserved ":>"        = Grin
     | reserved id          = Identifier(id)
 
   fun iseof EOF = true
