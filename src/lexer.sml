@@ -6,6 +6,8 @@ structure Lexer = struct
   exception InvalidHexEscape of string
   exception InvalidDecEscape of string
   exception InvalidEscapeSequence of char
+  exception UnclosedComment
+  exception InvalidCharacterLiteral of string
   exception LexicalError of char
 
   fun isalpha x =
@@ -200,7 +202,7 @@ structure Lexer = struct
               | SOME(c) =>
                   last := FileBuf.getch fb
               | NONE =>
-                  loop := false)
+                  raise UnclosedComment)
          | SOME(#"*") =>
              (case FileBuf.getch fb of
                 SOME(#")") =>
@@ -208,11 +210,11 @@ structure Lexer = struct
               | SOME(c) =>
                   last := FileBuf.getch fb
               | NONE =>
-                  loop := false)
+                  raise UnclosedComment)
          | SOME(c) =>
              last := FileBuf.getch fb
          | NONE =>
-             loop := false);
+             raise UnclosedComment);
        FileBuf.bump fb
     end
 
@@ -249,6 +251,18 @@ structure Lexer = struct
                          else
                            Token.reserved ("~" ^ lex_while issymbol fb)
            | NONE => Token.reserved "~")
+
+        else if c = #"#" then
+          (FileBuf.bump fb;
+           case FileBuf.getch fb of
+             SOME(#"\"") => let val s = lex_string fb in
+                              if size s = 1 then
+                                Token.Char(String.sub(s, 0))
+                              else
+                                raise InvalidCharacterLiteral(s)
+                            end
+           | SOME(c) => Token.reserved ("#" ^ lex_while issymbol fb)
+           | NONE => Token.reserved "#")
 
         else if isalpha c then
           Token.reserved (lex_while isalphanumeric fb)

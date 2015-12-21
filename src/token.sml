@@ -45,6 +45,7 @@ structure Token = struct
   | Word of string
   | Real of string
   | String of string
+  | Char of char
   | LParen
   | RParen
   | LCurly

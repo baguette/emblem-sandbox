@@ -2,7 +2,7 @@
 infixr <|
 fun (f <| x) = f x
 
-infixr |>
+infix |>
 fun (x |> f) = f x
 
 fun contains x xs =
