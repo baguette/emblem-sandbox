@@ -1,5 +1,13 @@
 
 structure Lexer = struct
+  exception SignedWordLiteral of string
+  exception UnclosedStringLiteral of string
+  exception InvalidControlCharacter of char
+  exception InvalidHexEscape of string
+  exception InvalidDecEscape of string
+  exception InvalidEscapeSequence of char
+  exception LexicalError of char
+
   fun isalpha x =
     ((ord x) >= (ord #"a") andalso (ord x) <= (ord #"z"))
     orelse
@@ -9,17 +17,20 @@ structure Lexer = struct
   fun isdigit x =
     ((ord x) >= (ord #"0") andalso (ord x) <= (ord #"9"))
 
-  fun isoneof x str =
+  fun isoneof str x =
     contains x (explode str)
 
   fun isalphanumeric x =
     (isalpha x) orelse (isdigit x) orelse x = #"_" orelse x = #"'"
 
   fun issymbol x =
-    isoneof x "!%&$#+-/:<=>?@\\~'^|*"
+    isoneof ".!%&$#+-/:<=>?@\\~'^|*" x
 
   fun iswhitespace x =
-    isoneof x " \t\n"
+    isoneof " \t\n\r\f" x
+
+  fun ishex x =
+    isoneof "0123456789ABCDEFabcdef" x
 
   fun isnewline x = x = #"\n"
 
@@ -40,20 +51,135 @@ structure Lexer = struct
       lex_while p fb
     end
 
-  (* TODO: Lex numbers *)
+  fun lex_hex fb =
+    "0x" ^ lex_while ishex fb
 
-  (* TODO: Other escapes *)
+  fun lex_number sign fb =
+    let val first = ref (FileBuf.getch fb);
+        val leader = ref (case !first of
+                       NONE => NONE
+                     | SOME(#"0") => (FileBuf.bump fb; FileBuf.getch fb)
+                     | c => c);
+        val word = case !leader of
+                     SOME(#"w") => (FileBuf.bump fb;
+                                    leader := FileBuf.getch fb;
+                                    true)
+                   | _ => false;
+        val hex = case !leader of
+                    SOME(#"x") => (FileBuf.bump fb; true)
+                  | _ => false
+    in
+      if word then
+        if sign = "" then
+          if hex then
+            Token.Word(lex_hex fb)
+          else
+            Token.Word(lex_while isdigit fb)
+        else
+          if hex then
+            raise SignedWordLiteral(lex_hex fb)
+          else
+            raise SignedWordLiteral(lex_while isdigit fb)
+      else if hex then
+        Token.Int(sign ^ lex_hex fb)
+      else
+        let val significand = lex_while isdigit fb;
+            val significand = if significand = "" then "0" else significand
+            val fraction = case FileBuf.getch fb of
+                             SOME(#".") => (FileBuf.bump fb;
+                                            "." ^ lex_while isdigit fb)
+                           | _ => "";
+            val exponent = case FileBuf.getch fb of
+                           (* TODO: Handle negative exponents *)
+                             SOME(#"e") => (FileBuf.bump fb;
+                                            "e" ^ lex_while isdigit fb)
+                           | SOME(#"E") => (FileBuf.bump fb;
+                                            "e" ^ lex_while isdigit fb)
+                           | _ => ""
+        in
+          if fraction <> "" orelse exponent <> "" then
+            Token.Real(sign ^ significand ^ fraction ^ exponent)
+          else
+            Token.Int(sign ^ significand)
+        end
+    end
+
   fun lex_string fb =
     let
-      val last = ref (FileBuf.getch fb);
-      fun bump () = (last := FileBuf.getch fb; FileBuf.bump fb);
       fun lex_string_rev xs =
+       (FileBuf.bump fb;
         case FileBuf.getch fb of
-          NONE => raise Fail("Unclosed string")
-        | SOME(#"\"") => (case !last of
-                            SOME(#"\\") => (bump(); lex_string_rev (#"\""::xs))
-                          | _ => (bump(); xs))
-        | SOME(c) => (bump(); lex_string_rev (c::xs))
+          NONE => raise UnclosedStringLiteral(implode (rev xs))
+        | SOME(#"\"") => (FileBuf.bump fb; xs)
+        | SOME(#"\\") => (FileBuf.bump fb;
+                          case FileBuf.getch fb of
+                            NONE =>
+                              raise UnclosedStringLiteral(implode (rev xs))
+                          | SOME(#"a") => lex_string_rev (#"\a"::xs)
+                          | SOME(#"b") => lex_string_rev (#"\b"::xs)
+                          | SOME(#"t") => lex_string_rev (#"\t"::xs)
+                          | SOME(#"n") => lex_string_rev (#"\n"::xs)
+                          | SOME(#"v") => lex_string_rev (#"\v"::xs)
+                          | SOME(#"f") => lex_string_rev (#"\f"::xs)
+                          | SOME(#"r") => lex_string_rev (#"\r"::xs)
+                          | SOME(#"^") => 
+                            (FileBuf.bump fb;
+                             case FileBuf.getch fb of
+                               NONE =>
+                                raise UnclosedStringLiteral(implode (rev xs))
+                             | SOME(c) =>
+                                let val n = ord(c) in
+                                  if 64 <= n andalso 95 >= n then
+                                    let val ch = chr(n - 64) in
+                                      lex_string_rev (ch::xs)
+                                    end
+                                  else
+                                    raise InvalidControlCharacter(c)
+                                end)
+                          | SOME(#"u") =>
+                            (FileBuf.bump fb;
+                             let val d = lex_while ishex fb in
+                               if size d = 4 then
+                                 let val n = case Word.fromString d of
+                                               SOME(n) => Word.toInt n
+                                             | NONE =>
+                                               raise InvalidHexEscape(d);
+                                     val c = chr(n)
+                                 in
+                                   lex_string_rev (c::xs)
+                                 end
+                               else
+                                 raise InvalidHexEscape(d)
+                             end)
+                           | SOME(#"\"") => lex_string_rev (#"\""::xs)
+                           | SOME(#"\\") => lex_string_rev (#"\\"::xs)
+                           | SOME(c) =>
+                             if isdigit c then
+                               let val d = lex_while isdigit fb in
+                                 if size d = 3 then
+                                   let val n = case Int.fromString d of
+                                                 SOME(n) => n
+                                               | NONE =>
+                                                  raise InvalidDecEscape(d);
+                                       val c = chr(n)
+                                   in
+                                     lex_string_rev (c::xs)
+                                   end
+                                 else
+                                   raise InvalidDecEscape(d)
+                               end
+                             else if iswhitespace c then
+                               let val _ = lex_while iswhitespace fb in
+                                 case FileBuf.getch fb of
+                                   NONE =>
+                                    raise UnclosedStringLiteral(implode
+                                                                  (rev xs))
+                                 | SOME(#"\\") => lex_string_rev xs
+                                 | SOME(c) => raise InvalidEscapeSequence(c)
+                               end
+                             else
+                               raise InvalidEscapeSequence(c))
+        | SOME(c) => lex_string_rev (c::xs))
     in
       implode (rev (lex_string_rev []))
     end
@@ -115,11 +241,23 @@ structure Lexer = struct
              SOME(#"-") => (lex_line_comment fb; lex fb)
            | _ => Token.reserved ("-" ^ (lex_while issymbol fb)))
 
+        else if c = #"~" then
+          (FileBuf.bump fb;
+           case FileBuf.getch fb of
+             SOME(ch) => if isdigit ch then
+                           lex_number "~" fb
+                         else
+                           Token.reserved ("~" ^ lex_while issymbol fb)
+           | NONE => Token.reserved "~")
+
         else if isalpha c then
           Token.reserved (lex_while isalphanumeric fb)
 
         else if issymbol c then
           Token.reserved (lex_while issymbol fb)
+
+        else if isdigit c then
+          lex_number "" fb
 
         else
           case c of
@@ -130,8 +268,8 @@ structure Lexer = struct
           | #"}" => return Token.RCurly
           | #"," => return Token.Comma
           | #";" => return Token.Semicolon
-          | #"\"" => return Token.String(lex_string fb)
-          | _ => raise Fail("Lexical error")
+          | #"\"" => Token.String(lex_string fb)
+          | _ => raise LexicalError(c)
     end
 end
 

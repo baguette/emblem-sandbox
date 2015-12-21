@@ -37,12 +37,12 @@ structure Token = struct
   | Colon
   | Underscore
   | Pipe
-  | Equals
   | FatArrow
   | Arrow
   | Pound
   | Identifier of string
   | Int of string
+  | Word of string
   | Real of string
   | String of string
   | LParen
@@ -88,12 +88,15 @@ structure Token = struct
     | reserved "with"      = With
     | reserved "withtype"  = Withtype
     | reserved "while"     = While
+    | reserved "."         = Dot
     | reserved ":"         = Colon
     | reserved "_"         = Underscore
     | reserved "|"         = Pipe
-    | reserved "="         = Equals
     | reserved "=>"        = FatArrow
     | reserved "->"        = Arrow
     | reserved "#"         = Pound
     | reserved id          = Identifier(id)
+
+  fun iseof EOF = true
+    | iseof _   = false
 end

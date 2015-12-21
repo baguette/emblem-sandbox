@@ -18,6 +18,11 @@ structure FileBuf = struct
       }
     end
 
+  fun close fb =
+    let val Buf {stream, ...} = fb in
+      TextIO.closeIn stream
+    end
+
   fun bump fb =
     let val Buf {line_num, col_num, stream, ...} = fb
         val c = TextIO.input1 stream
