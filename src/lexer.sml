@@ -20,7 +20,7 @@ structure Lexer = struct
     ((ord x) >= (ord #"0") andalso (ord x) <= (ord #"9"))
 
   fun isoneof str x =
-    contains x (explode str)
+    Char.contains str x
 
   fun isalphanumeric x =
     (isalpha x) orelse (isdigit x) orelse x = #"_" orelse x = #"'"

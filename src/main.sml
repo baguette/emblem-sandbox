@@ -1,4 +1,3 @@
-use "util.sml";
 use "token.sml";
 use "filebuf.sml";
 use "lexer.sml";
