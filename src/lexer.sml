@@ -53,6 +53,15 @@ structure Lexer = struct
       lex_while p fb
     end
 
+  fun lex_optional pred fb =
+    case FileBuf.getch fb of
+      NONE => ""
+    | SOME(c) => if pred c then
+                   (FileBuf.bump fb;
+                    str(c))
+                 else
+                   ""
+
   fun lex_hex fb =
     "0x" ^ lex_while ishex fb
 
@@ -92,11 +101,12 @@ structure Lexer = struct
                                             "." ^ lex_while isdigit fb)
                            | _ => "";
             val exponent = case FileBuf.getch fb of
-                           (* TODO: Handle negative exponents *)
                              SOME(#"e") => (FileBuf.bump fb;
-                                            "e" ^ lex_while isdigit fb)
+                                            "e" ^ lex_optional (isoneof "~") fb
+                                                ^ lex_while isdigit fb)
                            | SOME(#"E") => (FileBuf.bump fb;
-                                            "e" ^ lex_while isdigit fb)
+                                            "e" ^ lex_optional (isoneof "~") fb
+                                                ^ lex_while isdigit fb)
                            | _ => ""
         in
           if fraction <> "" orelse exponent <> "" then
