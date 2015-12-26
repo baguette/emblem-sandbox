@@ -1,6 +1,6 @@
 
 structure FileBuf = struct
-  datatype filebuf = Buf of {
+  datatype t = Buf of {
     line_num: int ref,
     col_num: int ref,
     stream: TextIO.instream,

@@ -1,3 +1,48 @@
+structure LexBuf = struct
+  datatype t = Buf of {
+    line: int ref,
+    start_col: int ref,
+    end_col: int ref,
+    filebuf: FileBuf.t
+  }
+  
+  fun new fb =
+    Buf {
+      line = ref 1,
+      start_col = ref 1,
+      end_col = ref 1,
+      filebuf = fb
+    }
+
+  fun get_filebuf lb =
+    let val Buf {filebuf, ...} = lb in
+      filebuf
+    end
+
+  fun set_line lb =
+    let val Buf {line, filebuf, ...} = lb
+        val FileBuf.Buf {line_num, ...} = filebuf
+    in
+      line := !line_num
+    end
+    
+
+  fun set_start_col lb =
+    let val Buf {start_col, filebuf, ...} = lb
+        val FileBuf.Buf {col_num, ...} = filebuf
+    in
+      start_col := !col_num
+    end
+
+  fun set_end_col lb =
+    let val Buf {end_col, filebuf, ...} = lb
+        val FileBuf.Buf {col_num, ...} = filebuf
+    in
+      end_col := !col_num - 1
+    end
+end
+
+    
 
 structure Lexer = struct
   exception SignedWordLiteral of string
@@ -232,67 +277,71 @@ structure Lexer = struct
     lex_until isnewline fb
 
 
-  fun lex fb =
-    let fun return t = (FileBuf.bump fb; t) in
-      case FileBuf.getch fb of
-        NONE => Token.EOF
-      | SOME(c) =>
-
+  fun lex lb =
+    let val fb = LexBuf.get_filebuf lb
+        fun return t = (LexBuf.set_end_col lb; t)
+        fun bumpreturn t = (FileBuf.bump fb; LexBuf.set_end_col lb; t)
+    in
+     LexBuf.set_line lb;
+     LexBuf.set_start_col lb;
+     case FileBuf.getch fb of
+       NONE => return Token.EOF
+     | SOME(c) =>
         if iswhitespace c then
-          (lex_while iswhitespace fb; lex fb)
+          (lex_while iswhitespace fb; lex lb)
 
         else if c = #"(" then
           (FileBuf.bump fb;
            case FileBuf.getch fb of
-             SOME(#"*") => (lex_block_comment fb; lex fb)
-           | _ => Token.LParen)
+             SOME(#"*") => (lex_block_comment fb; lex lb)
+           | _ => return Token.LParen)
 
         else if c = #"-" then
           (FileBuf.bump fb;
            case FileBuf.getch fb of
-             SOME(#"-") => (lex_line_comment fb; lex fb)
-           | _ => Token.reserved ("-" ^ (lex_while issymbol fb)))
+             SOME(#"-") => (lex_line_comment fb; lex lb)
+           | _ => return (Token.reserved ("-" ^ (lex_while issymbol fb))))
 
         else if c = #"~" then
           (FileBuf.bump fb;
            case FileBuf.getch fb of
              SOME(ch) => if isdigit ch then
-                           lex_number "~" fb
+                           return (lex_number "~" fb)
                          else
-                           Token.reserved ("~" ^ lex_while issymbol fb)
-           | NONE => Token.reserved "~")
+                           return (Token.reserved ("~" ^ lex_while issymbol fb))
+           | NONE => return (Token.reserved "~"))
 
         else if c = #"#" then
           (FileBuf.bump fb;
            case FileBuf.getch fb of
              SOME(#"\"") => let val s = lex_string fb in
                               if size s = 1 then
-                                Token.Char(String.sub(s, 0))
+                                return (Token.Char(String.sub(s, 0)))
                               else
                                 raise InvalidCharacterLiteral(s)
                             end
-           | SOME(c) => Token.reserved ("#" ^ lex_while issymbol fb)
-           | NONE => Token.reserved "#")
+           | SOME(c) => return (Token.reserved ("#" ^ lex_while issymbol fb))
+           | NONE => return (Token.reserved "#"))
 
         else if isalpha c then
-          Token.reserved (lex_while isalphanumeric fb)
+          return (Token.reserved (lex_while isalphanumeric fb))
 
         else if issymbol c then
-          Token.reserved (lex_while issymbol fb)
+          return (Token.reserved (lex_while issymbol fb))
 
         else if isdigit c then
-          lex_number "" fb
+          return (lex_number "" fb)
 
         else
           case c of
-            #")" => return Token.RParen
-          | #"[" => return Token.LSquare
-          | #"]" => return Token.RSquare
-          | #"{" => return Token.LCurly
-          | #"}" => return Token.RCurly
-          | #"," => return Token.Comma
-          | #";" => return Token.Semicolon
-          | #"\"" => Token.String(lex_string fb)
+            #")" => bumpreturn Token.RParen
+          | #"[" => bumpreturn Token.LSquare
+          | #"]" => bumpreturn Token.RSquare
+          | #"{" => bumpreturn Token.LCurly
+          | #"}" => bumpreturn Token.RCurly
+          | #"," => bumpreturn Token.Comma
+          | #";" => bumpreturn Token.Semicolon
+          | #"\"" => return (Token.String(lex_string fb))
           | _ => raise LexicalError(c)
     end
 end

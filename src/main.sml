@@ -2,11 +2,16 @@ use "token.sml";
 use "filebuf.sml";
 use "lexer.sml";
 
-fun display_tokens fb =
-  let val tok = ref (Lexer.lex fb) in
+fun display_tokens lb =
+  let val tok = ref (Lexer.lex lb) in
     while not (Token.iseof (!tok)) do
-      (PolyML.print (!tok);
-       tok := Lexer.lex fb)
+      let val LexBuf.Buf {line, start_col, end_col, ...} = lb in
+        (print ((Int.toString (!line))      ^ "," ^
+                (Int.toString (!start_col)) ^ "-" ^
+                (Int.toString (!end_col))   ^ ": ");
+         PolyML.print (!tok);
+         tok := Lexer.lex lb)
+      end
   end
 
 fun report_lexical_error fb msg =
@@ -18,9 +23,10 @@ fun report_lexical_error fb msg =
 
 fun lex_file filename =
   let val fb = FileBuf.new filename;
+      val lb = LexBuf.new fb;
       val report = report_lexical_error fb
   in
-    display_tokens fb
+    display_tokens lb
       handle Lexer.SignedWordLiteral(s) =>
               report ("Word literal cannot be signed: " ^ s)
            | Lexer.UnclosedStringLiteral(s) => 

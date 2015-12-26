@@ -1,6 +1,6 @@
 
 structure Token = struct
-  datatype token = 
+  datatype t = 
     EOF
   | Abstype
   | And
