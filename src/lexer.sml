@@ -1,4 +1,7 @@
 structure LexBuf = struct
+  (* The FileBuf being lexed,
+   * along with location information for the last token scanned.
+   *)
   datatype t = Buf of {
     line: int ref,
     start_col: int ref,

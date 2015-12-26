@@ -14,17 +14,21 @@ fun display_tokens lb =
       end
   end
 
-fun report_lexical_error fb msg =
-  let val FileBuf.Buf {filename, line_num, ...} = fb;
-      val line = Int.toString (!line_num)
+fun report_lexical_error lb msg =
+  let val LexBuf.Buf {filebuf, line, start_col, end_col, ...} = lb
+      val FileBuf.Buf {filename, ...} = filebuf
+      val line = Int.toString (!line)
+      val start_col = Int.toString (!start_col)
+      val end_col = Int.toString(!end_col)
   in
-    print (filename ^ "(" ^ line ^ "): Lexical error: " ^ msg ^ "\n")
+    print (filename ^ "(" ^ line ^ ":" ^ start_col ^ "-" ^ end_col ^
+           "): Lexical error: " ^ msg ^ "\n")
   end
 
 fun lex_file filename =
   let val fb = FileBuf.new filename;
       val lb = LexBuf.new fb;
-      val report = report_lexical_error fb
+      val report = report_lexical_error lb
   in
     display_tokens lb
       handle Lexer.SignedWordLiteral(s) =>
