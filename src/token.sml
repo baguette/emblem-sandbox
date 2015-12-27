@@ -2,7 +2,6 @@
 structure Token = struct
   datatype t = 
     EOF
-  | Abstype
   | And
   | Andalso
   | As
@@ -12,6 +11,7 @@ structure Token = struct
   | Else
   | End
   | Exception
+  | For
   | Fn
   | Fun
   | Handle
@@ -29,6 +29,7 @@ structure Token = struct
   | Raise
   | Rec
   | Then
+  | Try
   | Type
   | Val
   | With
@@ -41,6 +42,7 @@ structure Token = struct
   | Arrow
   | Pound
   | Identifier of string
+  | Tyvar of string
   | Int of string
   | Word of string
   | Real of string
@@ -56,7 +58,6 @@ structure Token = struct
   | Dot
   | Semicolon
   | Dotdotdot
-  | Eqtype
   | Functor
   | Include
   | Sharing
@@ -65,10 +66,8 @@ structure Token = struct
   | Struct
   | Structure
   | Where
-  | Grin
 
-  fun reserved "abstype"   = Abstype
-    | reserved "and"       = And
+  fun reserved "and"       = And
     | reserved "andalso"   = Andalso
     | reserved "as"        = As
     | reserved "case"      = Case
@@ -77,6 +76,7 @@ structure Token = struct
     | reserved "else"      = Else
     | reserved "end"       = End
     | reserved "exception" = Exception
+    | reserved "for"       = For
     | reserved "fn"        = Fn
     | reserved "fun"       = Fun
     | reserved "handle"    = Handle
@@ -94,6 +94,7 @@ structure Token = struct
     | reserved "raise"     = Raise
     | reserved "rec"       = Rec
     | reserved "then"      = Then
+    | reserved "try"       = Try
     | reserved "type"      = Type
     | reserved "val"       = Val
     | reserved "with"      = With
@@ -106,7 +107,7 @@ structure Token = struct
     | reserved "=>"        = FatArrow
     | reserved "->"        = Arrow
     | reserved "#"         = Pound
-    | reserved "eqtype"    = Eqtype
+    | reserved "..."       = Dotdotdot
     | reserved "functor"   = Functor
     | reserved "include"   = Include
     | reserved "sharing"   = Sharing
@@ -115,8 +116,11 @@ structure Token = struct
     | reserved "struct"    = Struct
     | reserved "structure" = Structure
     | reserved "where"     = Where
-    | reserved ":>"        = Grin
-    | reserved id          = Identifier(id)
+    | reserved id          =
+        if String.isPrefix "'" id then
+          Tyvar(id)
+        else
+          Identifier(id)
 
   fun iseof EOF = true
     | iseof _   = false
