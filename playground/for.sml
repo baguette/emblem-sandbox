@@ -57,3 +57,17 @@ fun members xs =
       | x::xs' => (ms := xs'; SOME(x))
   end
     
+
+infix when
+fun iter when pred =
+  fn () =>
+    let val x = ref (iter ())
+        val loop = ref true
+    in
+      while !loop do
+        case !x of
+          NONE => loop := false
+        | SOME(y) => if pred y then loop := false else x := iter ();
+      !x
+    end
+
