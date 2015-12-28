@@ -1,5 +1,6 @@
-/* TODO: Module grammar */
 %token EOF
+
+/* An LL(1) grammar for Emblem */
 
 /* Keywords */
 %token and andalso as case datatype do else end exception for fn fun handle
@@ -17,7 +18,12 @@
 /* identifiers */
 %token identifier tyvar
 
+/* identifiers but also special sometimes */
+%token equals times
+
 %%
+
+/* Programs */
 
 Program : Topdec Progsuffix
         ;
@@ -32,6 +38,9 @@ Topdec : Dec
        | Fundec
        | Exp
        ;
+
+
+/* Core language */
 
 Decone : val Valbind
        | fun Fvalbind
@@ -190,24 +199,22 @@ Pat : Atpatfactor Pattail
     ;
 
 Patfactor : Atpat
-          | Optionalty as Pat
           |
           ;
 
 Pattail :
         | identifier Pat Pattail
-        | colon Ty Pattail
+        | colon Ty Optionalaspat Pattail
         ;
 
-/* TODO: make sure this factoring actually works */
 Ty : tyvar Tytail
    | lcurly Optionaltyrow rcurly Tytail
    | lparen Tyseqcommas rparen Tytail
    ;
 
-Tytail : Longvid
-       | times Ty
-       | arrow Ty
+Tytail : Longvid Tytail
+       | times Ty Tytail
+       | arrow Ty Tytail
        |
        ;
 
@@ -301,5 +308,166 @@ Mruleseq : pipe Mrule Mruleseq
 
 Mrule : Pat fatarrow Exp
       ;
+
+
+/* Modules language */
+
+Strdec : structure Strbind
+       ;
+
+Strbind : identifier Sigmatch equals Str Andstrbind
+        ;
+
+Sigmatch : colon Sig
+         |
+         ;
+
+Andstrbind : and Strbind
+           |
+           ;
+
+Str : Longvid Funapp Strtail
+    | struct Dec end Strtail
+    | let Dec in Str end Strtail
+    ;
+
+Strtail : colon Sig Strtail
+        |
+        ;
+
+Funapp : lparen Strordec rparen
+       |
+       ;
+
+Strordec : Str
+         | Dec
+         ;
+
+Sigdec : signature Sigbind
+       ;
+
+Sigbind : identifier equals Sig Andsigbind
+        ;
+
+Andsigbind : and Sigbind
+           |
+           ;
+
+Sig : identifier Sigtail
+    | sig Spec end Sigtail
+    ;
+
+Sigtail : where type Typrefin Sigtail
+        |
+        ;
+
+Typrefin : Tyvarseq Longvid equals Ty Andtyprefin
+         ;
+
+Andtyprefin : and type Typrefin
+             |
+             ;
+
+Spec : val Valdesc Spectail
+     | type Spectyp Spectail
+     | datatype Specdatatyp Spectail
+     | exception Exndesc Spectail
+     | structure Strdesc Spectail
+     | include Specinclude Spectail
+     ;
+
+Spectyp : Tyvarseq identifier Spectypbind
+        ;
+
+Spectypbind : equals Ty Andtypbind
+            | Andtypdesc
+            ;
+
+Specdatatyp : Datdesc
+            | identifier equals datatype Longvid
+            ;
+
+Specinclude : sig Spec end Sigtail
+            | Longvidseq Sigtail
+            ;
+
+Spectail : sharing Spectailsharing Spectail
+         | Optionalsemi Spec Spectail
+         ;
+
+Spectailsharing : type Longvidequalseq
+                | Longvidequalseq
+                ;
+
+Longvidseq : Longvid Longvidseq
+           |
+           ;
+
+Longvidequalseq : Longvid Longvidequalseqseps
+                ;
+
+Longvidequalseqseps : equals Longvid Longvidequalseqseps
+                    |
+                    ;
+
+Valdesc : identifier colon Ty Andvaldesc
+        ;
+
+Andvaldesc : and Valdesc
+           |
+           ;
+
+Typdesc : Tyvarseq identifier Andtypdesc
+        ;
+
+Andtypdesc : and Typdesc
+           |
+           ;
+
+Datdesc : Tyvarseq identifier equals Condesc Anddatdesc
+        ;
+
+Anddatdesc : and Datdesc
+           |
+           ;
+
+Condesc : identifier Optionaloftyp Pipecondesc
+        ;
+
+Optionaloftyp : of Ty
+              |
+              ;
+
+Pipecondesc : pipe Condesc
+            |
+            ;
+
+Exndesc : identifier Optionaloftyp Andexndesc
+        ;
+
+Andexndesc : and Exndesc
+           |
+           ;
+
+Strdesc : identifier colon Sig Andstrdesc
+        ;
+
+Andstrdesc : and Strdesc
+           |
+           ;
+
+Fundec : functor Funbind
+       ;
+
+Funbind : identifier lparen Funbindrest
+        ;
+
+Funbindrest : identifier colon Sig rparen Sigmatch equals Str Andfunbind
+            | Spec Sigmatch equals Str Andfunbind
+            ;
+
+Andfunbind : and Funbind
+           |
+           ;
 
 %%
