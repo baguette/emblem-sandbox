@@ -73,20 +73,23 @@ Andvalbind : and Valbind
            |
            ;
 
-Fvalbind : Optionalop identifier Atpat Atpatseq Optionalty equals Exp Fvalbindseq Andfvalbind
+Fvalbind : Optionalop identifier Funargs Optionalty equals Exp Andfvalbind
          ;
 
 Optionalop : op
            |
            ;
 
+Funargs : Atpat Atpatseq
+        ;
+
+Atpatseq : Atpat Atpatseq
+         |
+         ;
+
 Optionalty : colon Ty
            |
            ;
-
-Fvalbindseq : pipe Fvalbind Fvalbindseq
-            |
-            ;
 
 Andfvalbind : and Fvalbind
             |
@@ -133,15 +136,19 @@ Tyvarseqcommas : comma tyvar Tyvarseqcommas
                |
                ;
 
-Atpat : underscore
-      | int
-      | char
-      | string
-      | word
-      | real
-      | lcurly Optionalpatrow rcurly
-      | lparen Patseq rparen
-      | lsquare Patseq rparen
+Atpatfactor : underscore
+            | int
+            | char
+            | string
+            | word
+            | real
+            | lcurly Optionalpatrow rcurly
+            | lparen Patseq rparen
+            | lsquare Patseq rparen
+            ;
+
+Atpat : Atpatfactor
+      | Optionalop Longvid
       ;
 
 Longvid : identifier Longviddots
@@ -178,21 +185,19 @@ Optionalaspat : as Pat
               |
               ;
 
-Factorpat : Atpat Factorpattail
-          | Optionalop Longvid Asorcons Factorpattail
+Pat : Atpatfactor Pattail
+    | Optionalop Longvid Patfactor Pattail
+    ;
+
+Patfactor : Atpat
+          | Optionalty as Pat
+          |
           ;
 
-Factorpattail : identifier Pat
-              |
-              ;
-
-Asorcons : Optionalty as Pat
-         | Atpat
-         |
-         ;
-
-Pat : Factorpat Optionalty
-    ;
+Pattail :
+        | identifier Pat Pattail
+        | colon Ty Pattail
+        ;
 
 /* TODO: make sure this factoring actually works */
 Ty : tyvar Tytail
@@ -285,7 +290,7 @@ Exp : Infexp Exptail
     | while Exp Exptail
     | for Pat in Exp Exptail
     | case Exp of Match end
-    | fn Patseq2
+    | fn Funargs fatarrow Exp
     ;
 
 Match : Mrule Mruleseq
@@ -297,12 +302,5 @@ Mruleseq : pipe Mrule Mruleseq
 
 Mrule : Pat fatarrow Exp
       ;
-
-Patseq2 : Pat Patseqspaces
-        ;
-
-Patseqspaces : Pat Patseqspaces
-             |
-             ;
 
 %%
