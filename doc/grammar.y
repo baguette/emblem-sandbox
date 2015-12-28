@@ -276,22 +276,21 @@ Appexpseq : Atexp Appexpseq
           |
           ;
 
-Infexp : Appexp Infexptail
-       ;
-
-/* TODO: Find out if I did this right... */
-Infexptail : Infexp identifier Infexptail
-           |
-           ;
-
-Exp : Infexp Exptail
+Exp : Appexp Exptail
+    | try Expseq handle Match end Exptail
     | raise Exp Exptail
     | if Exp then Exp else Exp Exptail
     | while Exp Exptail
     | for Pat in Exp Exptail
-    | case Exp of Match end
-    | fn Funargs fatarrow Exp
+    | case Exp of Match end Exptail
+    | fn Funargs fatarrow Exp Exptail
     ;
+
+Exptail : colon Ty Exptail
+        | andalso Exp Exptail
+        | orelse Exp Exptail
+        |
+        ;
 
 Match : Mrule Mruleseq
       ;
