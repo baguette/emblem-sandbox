@@ -6,6 +6,7 @@
 %token and andalso as case datatype do else end exception for fn fun handle
 %token if in infix infixr let local nonfix of op open orelse raise rec then try
 %token type val with withtype while colon underscore pipe fatarrow arrow pound
+%token repeat until
 %token functor include sharing sig signature struct structure where
 
 /* symbolic */
@@ -288,6 +289,7 @@ Exp : Appexp Exptail
     | raise Exp Exptail
     | if Exp then Exp else Exp Exptail
     | while Exp Exptail
+    | repeat Exp until Exp Exptail
     | for Pat in Exp Exptail
     | case Exp of Match end Exptail
     | fn Funargs fatarrow Exp Exptail
@@ -306,8 +308,12 @@ Mruleseq : pipe Mrule Mruleseq
          |
          ;
 
-Mrule : Pat fatarrow Exp
+Mrule : Optionalpipe Pat fatarrow Exp
       ;
+
+Optionalpipe : pipe
+             |
+             ;
 
 
 /* Modules language */
