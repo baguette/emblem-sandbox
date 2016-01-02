@@ -5,11 +5,11 @@ use "lexer.sml";
 fun display_tokens lb =
   let val tok = ref (Lexer.lex lb) in
     while not (Token.iseof (!tok)) do
-      let val LexBuf.Buf {line, start_col, end_col, ...} = lb in
-        (print ((Int.toString (!line))      ^ "," ^
-                (Int.toString (!start_col)) ^ "-" ^
-                (Int.toString (!end_col))   ^ ": ");
-         PolyML.print (!tok);
+      let val Token.Token {typ, line, start_col, end_col} = !tok in
+        (print ((Int.toString (line))      ^ "," ^
+                (Int.toString (start_col)) ^ "-" ^
+                (Int.toString (end_col))   ^ ": ");
+         PolyML.print (typ);
          tok := Lexer.lex lb)
       end
   end

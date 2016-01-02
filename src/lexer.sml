@@ -282,8 +282,23 @@ structure Lexer = struct
 
   fun lex lb =
     let val fb = LexBuf.get_filebuf lb
-        fun return t = (LexBuf.set_end_col lb; t)
-        fun bumpreturn t = (FileBuf.bump fb; LexBuf.set_end_col lb; t)
+        fun return t =
+          (LexBuf.set_end_col lb;
+           let val LexBuf.Buf {
+             line,
+             start_col,
+             end_col,
+             ...
+            } = lb
+           in
+             Token.Token {
+               typ = t,
+               line = !line,
+               start_col = !start_col,
+               end_col = !end_col
+             }
+           end)
+        fun bumpreturn t = (FileBuf.bump fb; return t)
     in
      LexBuf.set_line lb;
      LexBuf.set_start_col lb;

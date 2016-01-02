@@ -33,10 +33,10 @@ Progsuffix : semicolon Program
            | Program
            ;
 
-Topdec : Dec
-       | Strdec
-       | Sigdec
-       | Fundec
+Topdec : structure Strbind
+       | signature Sigbind
+       | functor Funbind
+       | Dec
        | Exp
        ;
 
@@ -318,8 +318,6 @@ Optionalpipe : pipe
 
 /* Modules language */
 
-Strdec : structure Strbind
-       ;
 
 Strbind : identifier Sigmatch equals Str Andstrbind
         ;
@@ -348,9 +346,6 @@ Funapp : lparen Strordec rparen
 Strordec : Str
          | Dec
          ;
-
-Sigdec : signature Sigbind
-       ;
 
 Sigbind : identifier equals Sig Andsigbind
         ;
@@ -461,9 +456,6 @@ Strdesc : identifier colon Sig Andstrdesc
 Andstrdesc : and Strdesc
            |
            ;
-
-Fundec : functor Funbind
-       ;
 
 Funbind : identifier lparen Funbindrest
         ;

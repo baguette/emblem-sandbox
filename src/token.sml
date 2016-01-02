@@ -1,6 +1,6 @@
 
 structure Token = struct
-  datatype t = 
+  datatype typ = 
     EOF
   | And
   | Andalso
@@ -67,8 +67,15 @@ structure Token = struct
   | Structure
   | Where
 
+  datatype t = Token of {
+    typ: typ,
+    line: int,
+    start_col: int,
+    end_col: int
+  }
+
   fun reserved "and"       = And
-    | reserved "andalso"   = Andalso
+    | reserved "&&"        = Andalso
     | reserved "as"        = As
     | reserved "case"      = Case
     | reserved "datatype"  = Datatype
@@ -90,7 +97,7 @@ structure Token = struct
     | reserved "of"        = Of
     | reserved "op"        = Op
     | reserved "open"      = Open
-    | reserved "orelse"    = Orelse
+    | reserved "||"        = Orelse
     | reserved "raise"     = Raise
     | reserved "rec"       = Rec
     | reserved "then"      = Then
@@ -122,6 +129,8 @@ structure Token = struct
         else
           Identifier(id)
 
-  fun iseof EOF = true
-    | iseof _   = false
+  fun iseof (Token {typ, ...}) =
+    case typ of
+      EOF => true
+    | _ => false
 end
