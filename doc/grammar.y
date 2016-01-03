@@ -11,7 +11,10 @@
 
 /* symbolic */
 %token lparen rparen lcurly rcurly lsquare rsquare comma dot semicolon
-%token dotdotdot
+%token dotdotdot dotdot
+
+/* traits */
+%token trait impl derive
 
 /* constants */
 %token int word real string char
@@ -36,6 +39,8 @@ Progsuffix : semicolon Program
 Topdec : structure Strbind
        | signature Sigbind
        | functor Funbind
+       | trait Trbind
+       | impl Impbind
        | Dec
        | Exp
        ;
@@ -47,6 +52,7 @@ Decone : val Valbind
        | fun Fvalbind
        | type Typbind
        | datatype Datbind
+       | derive Tyvarseq Longvid Traitseq for datatype Datbind
        | exception Exbind
        | local Dec in Dec end
        | open identifier Identifierseq
@@ -62,6 +68,10 @@ Dec : Decone Decsequence
 Decsequence : Optionalsemi Decone Decsequence
             |
             ;
+
+Traitseq : comma Tyvarseq Longvid Traitseq
+         |
+         ;
 
 Optionalsemi : semicolon
              |
@@ -216,6 +226,7 @@ Ty : tyvar Tytail
 Tytail : Longvid Tytail
        | times Ty Tytail
        | arrow Ty Tytail
+       | Tycommastail fatarrow Ty Tytail
        |
        ;
 
@@ -467,5 +478,19 @@ Funbindrest : identifier colon Sig rparen Sigmatch equals Str Andfunbind
 Andfunbind : and Funbind
            |
            ;
+
+Trbind : Tyvarseq identifier Optionalsupertrait equals Spec end
+       ;
+
+Optionalsupertrait : colon Tyvarseq Longvid Supertraittail
+                   |
+                   ;
+
+Supertraittail : comma Tyvarseq Longvid Supertraittail
+               |
+               ;
+
+Impbind : Ty identifier equals Str
+        ;
 
 %%

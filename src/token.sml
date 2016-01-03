@@ -57,14 +57,18 @@ structure Token = struct
   | Comma
   | Dot
   | Semicolon
+  | Dotdot
   | Dotdotdot
+  | Derive
   | Functor
+  | Impl
   | Include
   | Sharing
   | Sig
   | Signature
   | Struct
   | Structure
+  | Trait
   | Where
 
   datatype t = Token of {
@@ -115,13 +119,17 @@ structure Token = struct
     | reserved "->"        = Arrow
     | reserved "#"         = Pound
     | reserved "..."       = Dotdotdot
+    | reserved ".."        = Dotdot
+    | reserved "derive"    = Derive
     | reserved "functor"   = Functor
+    | reserved "impl"      = Impl
     | reserved "include"   = Include
     | reserved "sharing"   = Sharing
     | reserved "sig"       = Sig
     | reserved "signature" = Signature
     | reserved "struct"    = Struct
     | reserved "structure" = Structure
+    | reserved "trait"     = Trait
     | reserved "where"     = Where
     | reserved id          =
         if String.isPrefix "'" id then
