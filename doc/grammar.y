@@ -226,7 +226,7 @@ Ty : tyvar Tytail
 Tytail : Longvid Tytail
        | times Ty Tytail
        | arrow Ty Tytail
-       | Tycommastail fatarrow Ty Tytail
+       | Tyseqcommastail fatarrow Ty Tytail
        |
        ;
 
