@@ -312,19 +312,23 @@ Exptail : colon Ty Exptail
         |
         ;
 
-Match : Mrule Mruleseq
+Match : Optionalpipe Mrule Mruleseq
       ;
 
 Mruleseq : pipe Mrule Mruleseq
          |
          ;
 
-Mrule : Optionalpipe Pat fatarrow Exp
+Mrule : Pat Orpatterns fatarrow Exp
       ;
 
 Optionalpipe : pipe
              |
              ;
+
+Orpatterns : pipe Pat Orpatterns
+           |
+           ;
 
 
 /* Modules language */
