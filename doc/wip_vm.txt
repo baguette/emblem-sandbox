@@ -1,0 +1,85 @@
+# Draft VM design for Emblem
+
+Heavy inspired by Lua 5.1's virtual machine, with some influences from
+Xavier Leroy's ZINC machine.
+
+## Instruction format
+
+       32    23    14    6          0
+-------------------------------------
+| iABC | B:9 | C:9 | A:8 | opcode:6 |
+| iABx |   Bx:18   | A:8 | opcode:6 |
+| isBx |  sBx:18   | A:8 | opcode:6 |
+-------------------------------------
+
+## Opcodes
+
+ 0 MOVE       Copy a value between registers
+ 1 LOADK      Load a constant into a register
+ 2 LOADV      Load a datatype variant into a register
+ 3 GETUPVAL   Load the contents of an upvalue into a register
+ 4 SETUPVAL   Store the contents of an upvalue from a register
+ 5 GETGLOBAL  Load the contents of a global variable into a register
+ 6 SETGLOBAL  Store the contents of a global from a register
+ 7 GETREF     Load the contents of a ref box into a register
+ 8 SETREF     Store the contents of a ref box from a register
+ 9 GETARRAY   Load an element from an array at a given index into a register
+10 SETARRAY   Store the contents of a register into an array at a given index
+11 GETTABLE   Load an element from a hashmap at a given key into a register
+12 SETTABLE   Store the contents of a register in a hashmap at a given key
+13 JMP        Unconditional jump
+14 EQ         Structural equality
+15 LT         Structural less-than
+16 LE         Structural less-than-or-equal
+17 TEST       Boolean test with conditional jump
+18 CALL       Call a closure
+19 TAILCALL   Perform a tail call
+20 RETURN     Return from a closure
+21 FORLOOP    Iterate a for loop
+22 CLOSE      Close a range of locals being used as upvalues
+23 CLOSURE    Create a closure from a function prototype
+24 GETMODULE  Load a value from a module into a register
+25 INSTMOD    Create an instance of a module from a module prototype
+
+
+## Binary header
+
+num bytes | Description
+--------------------------------------------------------------------------
+        5 | Signature: ESC, "Embl" (ASCII)
+        1 | Version: 0xMm (M = major version, m = minor version)
+        1 | Format: 0 is format of the official distribution
+        1 | Endianness: 0 big, 1 little
+        1 | Size of int in bytes
+        1 | Size of size_t in bytes
+        1 | Size of instruction in bytes (4 for the time being)
+        1 | Real flag: 1 if compiled with real support, else 0
+--------------------------------------------------------------------------
+
+Header is followed immediately by a function prototype for the "top-level",
+"main" function:
+
+type      | Description
+--------------------------------------------------------------------------
+   String | Source name
+      Int | Line defined
+      Int | Last line defined
+     Byte | Number of upvalues
+     Byte | Number of parameters
+     Byte | Number of registers used
+     List | List of instructions (bytecode)
+     List | List of constants
+     List | List of parameter types and return type
+     List | List of function prototypes
+     List | Source line positions (optional debug info)
+     List | List of locals (optional debug info)
+     List | List of upvalues (optional debug info)
+--------------------------------------------------------------------------
+
+Need "prototype" structures for:
+	* Signatures?
+	* Structures?
+	* Functors?
+
+How to represent type information in prototype structures?
+
