@@ -56,9 +56,9 @@ Decone : val Valbind
        | exception Exbind
        | local Dec in Dec end
        | open identifier Identifierseq
-       | infix Infixsuffix
-       | infixr Infixsuffix
-       | nonfix Identifierseq
+       | infix Optionalint identifier Identifierseq
+       | infixr Optionalint identifier Identifierseq
+       | nonfix identifier Identifierseq
        ;
 
 Dec : Decone Decsequence
@@ -81,13 +81,16 @@ Identifierseq : identifier Identifierseq
               |
               ;
 
-Infixsuffix : int Identifierseq
-            | Identifierseq
+Optionalint : int
+            |
             ;
 
-Valbind : Pat equals Exp Andvalbind
-        | rec Valbind
+Valbind : Optionalrec Pat equals Exp Andvalbind
         ;
+
+Optionalrec : rec
+            |
+            ;
 
 Andvalbind : and Valbind
            |
